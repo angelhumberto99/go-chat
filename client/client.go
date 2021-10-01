@@ -6,7 +6,27 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
+
+func listenServer(msgs *[]string, c net.Conn, name string) {
+	var msg string
+	for {
+		err := gob.NewDecoder(c).Decode(&msg)
+		if err != nil {
+			fmt.Println(err)
+			// terminamos el programa
+			os.Exit(1)
+		}
+		// si el mensaje recibido lleva el nombre del cliente
+		// entonces se reemplaza por la palabra "yo"
+		if strings.Contains(msg, name) {
+			*msgs = append(*msgs, "yo:" + msg[len(name)+1:])
+		} else {
+			*msgs = append(*msgs, msg)
+		}
+	}
+}
 
 func main() {
 	var msgs []string
@@ -28,6 +48,9 @@ func main() {
 		fmt.Println(err)
 	}
 
+	// escuchara todas las respuestas del servidor
+	go listenServer(&msgs, c, name)
+
 	for {
 		fmt.Print(menu)
 		input.Scan()
@@ -40,7 +63,7 @@ func main() {
 				}
 			case "2": // enviar mensaje
 				msg := bufio.NewScanner(os.Stdin)
-				fmt.Print("> ")
+				fmt.Print(">>> ")
 				msg.Scan()
 				err = gob.NewEncoder(c).Encode(name +": "+ msg.Text())
 				if err != nil {
@@ -54,6 +77,8 @@ func main() {
 		}
 
 		if input.Text() == "3" {
+			// se envia un mensaje al servidor 
+			// para eliminar la conexion al cliente
 			err = gob.NewEncoder(c).Encode("/quit")
 			if err != nil {
 				fmt.Println(err)

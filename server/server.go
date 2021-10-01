@@ -9,13 +9,15 @@ import (
 	"os"
 )
 
-func listenClients(msgs *[]string, clients *[]net.Conn, c net.Conn) {
+func listenClients(msgs *[]string, clients *[]net.Conn, c net.Conn, channel chan string) {
 	var msg string
 	for {
+		// recibimos los mensajes del cliente
 		err := gob.NewDecoder(c).Decode(&msg)
 		if err != nil {
 			fmt.Println(err)
 		}
+		// si llega "/quit" eliminamos la conexion del cliente
 		if msg == "/quit" {
 			for i, v := range *clients {
 				if v == c {
@@ -23,13 +25,17 @@ func listenClients(msgs *[]string, clients *[]net.Conn, c net.Conn) {
 					break
 				}
 			}
+			c.Close()
 			return
 		}
+		// añadimos el mensaje al slice de mensajes
 		*msgs = append(*msgs, msg)
+		// enviamos el mensaje a todos los clientes
+		channel <- msg
 	}
 }
 
-func checkConnection(s net.Listener, clients *[]net.Conn, msgs *[]string) {
+func checkConnection(s net.Listener, clients *[]net.Conn, msgs *[]string, channel chan string) {
 	var exists bool
 	for {
 		// peticiones del cliente
@@ -46,9 +52,24 @@ func checkConnection(s net.Listener, clients *[]net.Conn, msgs *[]string) {
 			}
 		}
 		
+		// si el cliente no existe, entonces lo añadimos
 		if !exists {
 			*clients = append(*clients, c)
-			go listenClients(msgs, clients, c)
+			go listenClients(msgs, clients, c, channel)
+		}
+	}
+}
+
+func clientsMsgsHandler(clients *[]net.Conn, channel chan string) {
+	for {
+		// si recibimos una señal por el canal
+		// enviaremos a todos los clientes un mensaje
+		msg := <-channel
+		for _,c := range *clients {
+			err := gob.NewEncoder(c).Encode(msg)
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 	}
 }
@@ -56,6 +77,7 @@ func checkConnection(s net.Listener, clients *[]net.Conn, msgs *[]string) {
 func main() {
 	var clients []net.Conn
 	var msgs []string
+	channel := make(chan string)
 	menu := "1) Ver mensajes\n" + 
 			"2) Enviar mensaje\n" + 
 			"3) Salir\n"
@@ -69,7 +91,8 @@ func main() {
 		return
 	}
 	defer s.Close()
-	go checkConnection(s, &clients, &msgs)
+	go checkConnection(s, &clients, &msgs, channel)
+	go clientsMsgsHandler(&clients, channel)
 
 	for {
 		fmt.Print(menu)
