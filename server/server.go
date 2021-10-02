@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 )
 
 func listenClients(msgs *[]string, clients *[]net.Conn, c net.Conn, channel chan string) {
@@ -27,8 +28,18 @@ func listenClients(msgs *[]string, clients *[]net.Conn, c net.Conn, channel chan
 			c.Close()
 			return
 		}
-		// añadimos el mensaje al slice de mensajes
-		*msgs = append(*msgs, msg)
+
+		if strings.Contains(msg, "/file") {
+			info := strings.Split(msg, "?")[0]
+			data := strings.Split(info, ">")
+
+			fileName := (data[0])[len("/file<"):]
+			user := (data[1])[1:len(data[1])-1]
+			*msgs = append(*msgs, user + " envío: "+ fileName)
+		} else {
+			// añadimos el mensaje al slice de mensajes
+			*msgs = append(*msgs, msg)
+		}
 		// enviamos el mensaje a todos los clientes
 		channel <- msg
 	}
