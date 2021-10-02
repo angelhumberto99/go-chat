@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/gob"
 	"fmt"
-	"io"
 	"net"
 	"os"
 )
@@ -74,12 +73,23 @@ func clientsMsgsHandler(clients *[]net.Conn, channel chan string) {
 	}
 }
 
+func saveMsgs(msgs []string) {
+	file, err := os.Create("dataBase.txt")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer file.Close()
+	for _, v := range msgs {
+		file.WriteString(v+"\n")
+	}
+}
+
 func main() {
 	var clients []net.Conn
 	var msgs []string
 	channel := make(chan string)
-	menu := "1) Ver mensajes\n" + 
-			"2) Enviar mensaje\n" + 
+	menu := "1) Mostrar mensajes/archivos\n" + 
+			"2) Respaldar mensajes\n" + 
 			"3) Salir\n"
 	input := bufio.NewScanner(os.Stdin)
 
@@ -103,10 +113,8 @@ func main() {
 				for _,v := range msgs {
 					fmt.Println(v)
 				}
-			case "2": // enviar mensaje
-				for _,v := range clients {
-					io.WriteString(v, "hola")
-				}
+			case "2": // respaldar mensajes
+				saveMsgs(msgs)
 			case "3": // terminar cliente
 				fmt.Println("Terminando Servidor")
 			default:
