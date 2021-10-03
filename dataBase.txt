@@ -1,0 +1,6 @@
+angel: hola, mi nombre es ángel
+angel: cuál es tu nombre?
+pedro: hola mucho gusto, mi nombre es pedro
+angel envío: img1.jpg
+pedro envío: img1.jpg
+angel: ejemplo

@@ -1,5 +1,0 @@
-angel envío: textFile.txt
-andre envío: imagen-ejemplo.jpg
-humberto envío: img2.jpg
-pepe: hola 
-angel: hola que tal

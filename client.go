@@ -31,7 +31,8 @@ func listenServer(msgs *[]string, c net.Conn, name string) {
 			fileInfo := msg[len(info)+1:]
 
 			if user != name {
-				dest, err := os.Create("./files/"+fileName)
+				path := "./"+name+"/"+fileName
+				dest, err := os.Create(path)
 				if err != nil {
 					fmt.Println(err)
 				} 
@@ -52,8 +53,8 @@ func listenServer(msgs *[]string, c net.Conn, name string) {
 	}
 }
 
-func listDirectory() string{
-	dir, err := ioutil.ReadDir("./files")
+func listDirectory(name string) string{
+	dir, err := ioutil.ReadDir("./"+name)
 	var files []string
 	input := bufio.NewScanner(os.Stdin)
 
@@ -66,6 +67,7 @@ func listDirectory() string{
 
 	fmt.Println("Archivos")
 	if len(files) == 0 {
+		fmt.Println("Usted no cuenta con ningún archivo")
 		return "-1"
 	}
 	// menú
@@ -82,7 +84,7 @@ func listDirectory() string{
 }
 
 func sendFile(fileName, userName string, c net.Conn) {
-	origin, err := os.ReadFile("./files/"+fileName)
+	origin, err := os.ReadFile("./"+userName+"/"+fileName)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -108,6 +110,9 @@ func main() {
 	fmt.Print("Ingrese su nombre: ")
 	input.Scan()
 	name = input.Text()
+
+	// creamos una carpeta para sus archivos
+	os.Mkdir(name, os.ModePerm)
 
 	// conectamos el cliente al servidor
 	c, err := net.Dial("tcp", ":9999")
@@ -137,7 +142,7 @@ func main() {
 					fmt.Println(err)
 				}
 			case "3": // enviar archivo
-				fileName := listDirectory()
+				fileName := listDirectory(name)
 				if fileName != "-1" {
 					sendFile(fileName, name, c)
 				}
